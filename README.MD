@@ -2,6 +2,8 @@
 A simple tool to shift all bytes and forward traffic
 ## Why this?
 I personally use this with an HTTP Proxy server to bypass censorship. Iran's DPI system is stupid enough to let the traffic get through. You can also use a SOCKS server behind the forwarder.
+
+No shit guys, I almost went WTF when this worked.
 ## Install
 Use the executables from [releases](https://github.com/HirbodBehnam/Shift-Forwarder/releases) and download one for your server and client.
 ### Server
