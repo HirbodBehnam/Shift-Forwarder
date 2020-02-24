@@ -21,5 +21,7 @@ Just as easy as
 ```bash
 go build main.go
 ```
+#### Verbose mode
+To enable verbose mode pass `-v` as last argument
 ## How it works
 SO SIMPLE! When client forwards something to server, it adds 1 to all of the bytes. On server, the all the bytes will be subtracted by one. After the subtract, server will forward the traffic to the destination. The server->client traffic is also shifted like this.
