@@ -19,7 +19,6 @@ const VERSION = "1.1.0 / Build 2"
 func main() {
 	var port, interfaceAddress string
 	{ // Parse arguments
-		//showHelp := flag.Bool("help",false,"Show the help")
 		flag.BoolVar(&Server, "server", false, "Pass this argument to run as server application")
 		flag.BoolVar(&BitwiseMode, "bitwise", false, "Pass this argument to enable bitwise mode; Otherwise addition mode is used)")
 		flag.BoolVar(&Verbose, "verbose", false, "More logs")
@@ -47,13 +46,13 @@ func main() {
 		fmt.Println("Bitwise mode:", BitwiseMode)
 		fmt.Println("Listening on " + interfaceAddress + ":" + port)
 	}
-	ln, err := net.Listen("tcp", interfaceAddress+":"+port)
+	ln, err := net.Listen("tcp", interfaceAddress+":"+port) // start listening for connections
 	if err != nil {
 		panic(err)
 	}
 
 	for {
-		conn, err := ln.Accept()
+		conn, err := ln.Accept() // accept incoming connections
 		if err != nil {
 			log.Println("Error on accepting new connection:", err)
 			continue
@@ -66,9 +65,10 @@ func main() {
 }
 
 func handleRequest(conn net.Conn) {
-	proxy, err := net.Dial("tcp", To)
+	proxy, err := net.Dial("tcp", To) // dial the other side; If this is server, dial the address that the traffic is going to be forwarded. If this is client, the server will be dialed
 	if err != nil {
 		log.Println("Error on dialing:", err)
+		_ = conn.Close()
 		return
 	}
 
@@ -83,7 +83,7 @@ func copyIO(src, dest net.Conn) {
 	if BitwiseMode {
 		err = CopyBitwise(src, dest)
 	} else {
-		if Server {
+		if Server { // TBH, server -> client connection is data[i]-- and not data[i]++ :) (Who cares?)
 			err = ServerCopyAddition(src, dest)
 		} else {
 			err = ClientCopyAddition(src, dest)
@@ -91,7 +91,7 @@ func copyIO(src, dest net.Conn) {
 	}
 	if Verbose {
 		if err != nil {
-			log.Println("Error on forward:", err)
+			log.Println("Error on forward:", err) // this will actually throw errors when the copying is done :| (Use of closed connection)
 		}
 	}
 }
