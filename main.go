@@ -7,18 +7,35 @@ import (
 	"log"
 	"net"
 	"os"
+	"strings"
 )
 
-var Verbose bool
-var Server bool
-var To string
-var BitwiseMode bool
+var (
+	BitwiseMode bool
+	Server      bool
+	Verbose     bool
+	To          string
+)
 
-const VERSION = "1.1.0 / Build 2"
+const VERSION = "1.2.0 / Build 3"
 
 func main() {
 	var port, interfaceAddress string
-	{ // Parse arguments
+	if os.Getenv("SS_LOCAL_HOST") != "" { // check if the program is running as shadowsocks plugin
+		pluginOptions := strings.Split(os.Getenv("SS_PLUGIN_OPTIONS"), ";")
+		Server = ArrayContains(pluginOptions, "server")
+		BitwiseMode = ArrayContains(pluginOptions, "bitwise")
+		Verbose = ArrayContains(pluginOptions, "verbose")
+		if Server { // server mode
+			To = os.Getenv("SS_LOCAL_HOST") + ":" + os.Getenv("SS_LOCAL_PORT")
+			interfaceAddress = os.Getenv("SS_REMOTE_HOST")
+			port = os.Getenv("SS_REMOTE_PORT")
+		} else { // client mode
+			To = os.Getenv("SS_REMOTE_HOST") + ":" + os.Getenv("SS_REMOTE_PORT")
+			interfaceAddress = os.Getenv("SS_LOCAL_HOST")
+			port = os.Getenv("SS_LOCAL_PORT")
+		}
+	} else { // Parse arguments
 		flag.BoolVar(&Server, "server", false, "Pass this argument to run as server application")
 		flag.BoolVar(&BitwiseMode, "bitwise", false, "Pass this argument to enable bitwise mode; Otherwise addition mode is used)")
 		flag.BoolVar(&Verbose, "verbose", false, "More logs")
@@ -44,7 +61,8 @@ func main() {
 		fmt.Println("Verbose mode on")
 		fmt.Println("Server mode:", Server)
 		fmt.Println("Bitwise mode:", BitwiseMode)
-		fmt.Println("Listening on " + interfaceAddress + ":" + port)
+		fmt.Println("Listening on", interfaceAddress+":"+port)
+		fmt.Println("Forwarding to", To)
 	}
 	ln, err := net.Listen("tcp", interfaceAddress+":"+port) // start listening for connections
 	if err != nil {
@@ -73,7 +91,10 @@ func handleRequest(conn net.Conn) {
 	}
 
 	go copyIO(conn, proxy)
-	go copyIO(proxy, conn)
+	copyIO(proxy, conn)
+	if Verbose {
+		log.Println("Closing a connection form", conn.RemoteAddr())
+	}
 }
 
 func copyIO(src, dest net.Conn) {
@@ -89,10 +110,8 @@ func copyIO(src, dest net.Conn) {
 			err = ClientCopyAddition(src, dest)
 		}
 	}
-	if Verbose {
-		if err != nil {
-			log.Println("Error on forward:", err) // this will actually throw errors when the copying is done :| (Use of closed connection)
-		}
+	if err != nil && !strings.Contains(err.Error(), "use of closed network connection") { // when a connection is closed, the other pipe raises use of closed network connection error
+		log.Println("Error on forward:", err)
 	}
 }
 
@@ -178,4 +197,14 @@ func CopyBitwise(src, dst net.Conn) (err error) {
 		}
 	}
 	return err
+}
+
+// checks if an array contains a specific element
+func ArrayContains(ary []string, check string) bool {
+	for _, k := range ary {
+		if k == check {
+			return true
+		}
+	}
+	return false
 }

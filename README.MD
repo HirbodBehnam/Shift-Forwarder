@@ -45,3 +45,25 @@ Bitwise mode, bitwises all bytes before sending them to server or client. So ser
 If you enable bitwise mode on server, it must be enabled on server too.
 ### How non bitwise mode works
 When client forwards something to server, it adds 1 to all of the bytes. On server, the all the bytes will be subtracted by one. After the subtract, server will forward the traffic to the destination. The server->client traffic is also shifted like this.
+## Shadowsocks Plugin
+You can also run this application as shadowsocks plugin. Here is an example of the server config:
+```json
+{
+    "server":"0.0.0.0",
+    "server_port":2345,
+    "password":"1234",
+    "timeout":60,
+    "method":"chacha20-ietf-poly1305",
+    "nameserver":"1.1.1.1",
+    "plugin":"/etc/shadowsocks-libev/sf",
+    "plugin_opts":"server;bitwise"
+}
+```
+`plugin_opts` supports 3 different values:
+* server: When this key exists, application will run as server mode
+* bitwise: When this key exists, application will use bitwise mode to obfuscate data. Otherwise addition is used.
+* verbose: Show more logs
+
+Keys must be separated with `;`
+
+Android application is coming soon
